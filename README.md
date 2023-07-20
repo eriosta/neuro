@@ -1,51 +1,61 @@
 # Dictionary Learning and GUI-based Labeling
-This repository contains code that demonstrates how to perform dictionary learning on functional MRI (fMRI) data using the Nilearn library. The code utilizes Nilearn's DictLearning class to learn a dictionary of components from fMRI data and saves the resulting components as separate NIfTI files.
+This script performs fMRI data processing using the DictLearning algorithm from the nilearn package. It allows you to specify the number of subjects and components as command-line arguments.
 
-## Dictionary Learning
-Dictionary learning is a technique used to decompose fMRI data into spatial components and their corresponding time courses. The process involves initializing a dictionary, sparse coding to obtain coefficients, updating the dictionary, and iterating until convergence. The learned components provide insights into brain activity patterns.
+# Prerequisites
+To set up the environment for running the script, you have two options: creating a conda environment or installing the required libraries using pip.
 
-## Prerequisites
-Before running the code, ensure that you have the following dependencies installed:
+## Step 1
 
-`python` (version 3.6 or higher)
-`numpy`
-`nibabel`
-`nilearn`
-`joblib`
-`tqdm`
-`subprocess`
-`easygui`
-`csv`
+### Install FMRIB Software Library (FSL)
+* [Download FSL](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki)
 
-You can install these dependencies using `pip`:
+## Step 2
+
+### Option 1: Conda Environment
+#### Install Miniconda or Anaconda
+* [Download Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+* [Download Anaconda](https://www.anaconda.com/products/individual)
+
+#### Create a conda environment
+
+**Option 1:** Using the provided environment.yml file:
 ```bash
-pip install numpy nibabel nilearn joblib tqdm
+conda env create -f environment.yml
+```
+**Option 2:** Manually creating the environment:
+```bash
+conda create -n my_environment_name python=3.10
+conda activate my_environment_name
+conda install -c conda-forge nilearn=0.10.1 nibabel=5.0.1 joblib=1.1.1 tqdm=4.64.1 pysimplegui=4.60.5
+```
+### Option 2: Pip Installation
+#### Install Python
+* [Download Python](https://www.python.org/downloads/)
+#### Install the required libraries using pip
+```bash
+pip install nibabel==5.0.1 nilearn==0.10.1 joblib==1.1.1 tqdm==4.64.1 PySimpleGUI==4.60.5
 ```
 
-## Usage
-Follow the instructions below to use the code:
+Choose the option that best suits your needs and system configuration. Once you have completed the setup, you will be ready to run the script.
 
-1. Clone or download this repository to your local machine.
-2. Navigate to the project directory:
+# Usage
+
+Run the script using the following command:
+
 ```bash
-cd neuro
+python app.py <N_SUBJECTS> <N_COMPONENTS>
 ```
-3. Update the desired values for the following variables in the code:
-  - `N_SUBJECTS`: The number of subjects to process.
-  - `COMPONENTS`: The number of components to learn.
-  - `original_dir`: The directory to save the original NIfTI files.
-  - `processed_dir`: The directory to save the processed component NIfTI files.
-5. Run the script:
+Replace `<N_SUBJECTS>` with the desired number of subjects and `<N_COMPONENTS>` with the desired number of components. For example, to process 5 subjects with 10 components each, use:
 ```bash
-python DL.py
+python app.py 5 10
 ```
-The script will perform the following steps:
-1. Fetch the fMRI dataset using Nilearn.
-2. Initialize the DictLearning object with the specified parameters.
-3. Process each subject's fMRI data in parallel:
-   - Fit the data to learn the components using dictionary learninng.
-   - Save the original NIfTI file.
-   - Save each component as a separate NIfTI file.
-   - Prompt for a label for each component using a GUI (`easygui`).
-   - Write the subject index, component index, and label to a CSV file.
-6. After the script completes, you will find the original and processed NIfTI files in the respective directories specified.
+The script will fetch the fMRI dataset (ADHD dataset) using the nilearn.datasets module. It will then perform DictLearning on the specified number of subjects and save the resulting components as separate NIfTI files.
+
+During the processing, FSLeyes will be launched to display the original and component images for each subject. You can use the PySimpleGUI dropdown GUI to select the label for each component.
+
+The processed component files will be saved in the processed_nii_files directory, and the labels will be saved in a timestamped CSV file.
+
+Please note that the script assumes the necessary directory structure (original_nii_files and processed_nii_files) exists in the current working directory. If the directories don't exist, the script will create them.
+
+# Disclaimer
+This script is provided as-is and without any warranty. Use it at your own risk. Ensure you have sufficient disk space and computational resources to perform the processing for the specified number of subjects and components.
