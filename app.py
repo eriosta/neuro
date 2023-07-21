@@ -49,6 +49,9 @@ total_subjects = len(func_filenames)
 start_time = time.time()
 
 # Function to fit the data and return the components_img
+# ...
+
+# Function to fit the data and return the components_img
 def process_subject(subject_idx, func_file):
     dict_learn.fit(func_file)
 
@@ -67,7 +70,7 @@ def process_subject(subject_idx, func_file):
         writer = csv.writer(f)
 
         # Write the column names
-        writer.writerow(['Subject', 'Component', 'Label'])
+        writer.writerow(['Subject', 'Component', 'Network', 'Laterality', 'Location'])
 
         # Iterate over each component and save it to a separate file
         for component_idx in range(components_img.shape[-1]):
@@ -82,9 +85,9 @@ def process_subject(subject_idx, func_file):
             # Open the original and the component image in FSLeyes
             fsl_process = subprocess.Popen(['fsleyes', original_file_name, component_file_name])
 
-            # Create a dropdown GUI for choosing the component label using PySimpleGUI
+            # Create dropdown GUIs for choosing the component label, laterality, and location using PySimpleGUI
             layout = [
-                [sg.Text("Choose the label for the component:")],
+                [sg.Text("Choose the network for the component:")],
                 [
                     sg.Combo(
                         [
@@ -99,22 +102,38 @@ def process_subject(subject_idx, func_file):
                         key='label'
                     )
                 ],
+                [sg.Text("Choose the laterality:")],
+                [
+                    sg.Combo(
+                        ['Left', 'Right'],
+                        key='laterality'
+                    )
+                ],
+                [sg.Text("Choose the location:")],
+                [
+                    sg.Combo(
+                        ['Background', 'Frontal Pole', 'Insular Cortex', 'Superior Frontal Gyrus', 'Middle Frontal Gyrus', 'Inferior Frontal Gyrus, pars triangularis', 'Inferior Frontal Gyrus, pars opercularis', 'Precentral Gyrus', 'Temporal Pole', 'Superior Temporal Gyrus, anterior division', 'Superior Temporal Gyrus, posterior division', 'Middle Temporal Gyrus, anterior division', 'Middle Temporal Gyrus, posterior division', 'Middle Temporal Gyrus, temporooccipital part', 'Inferior Temporal Gyrus, anterior division', 'Inferior Temporal Gyrus, posterior division', 'Inferior Temporal Gyrus, temporooccipital part', 'Postcentral Gyrus', 'Superior Parietal Lobule', 'Supramarginal Gyrus, anterior division', 'Supramarginal Gyrus, posterior division', 'Angular Gyrus', 'Lateral Occipital Cortex, superior division', 'Lateral Occipital Cortex, inferior division', 'Intracalcarine Cortex', 'Frontal Medial Cortex', 'Juxtapositional Lobule Cortex (formerly Supplementary Motor Cortex)', 'Subcallosal Cortex', 'Paracingulate Gyrus', 'Cingulate Gyrus, anterior division', 'Cingulate Gyrus, posterior division', 'Precuneous Cortex', 'Cuneal Cortex', 'Frontal Orbital Cortex', 'Parahippocampal Gyrus, anterior division', 'Parahippocampal Gyrus, posterior division', 'Lingual Gyrus', 'Temporal Fusiform Cortex, anterior division', 'Temporal Fusiform Cortex, posterior division', 'Temporal Occipital Fusiform Cortex', 'Occipital Fusiform Gyrus', 'Frontal Operculum Cortex', 'Central Opercular Cortex', 'Parietal Operculum Cortex', 'Planum Polare', "Heschl's Gyrus (includes H1 and H2)", 'Planum Temporale', 'Supracalcarine Cortex', 'Occipital Pole'],
+                        key='location'
+                    )
+                ],
                 [sg.Button('OK')]
             ]
 
-            window = sg.Window('Label Selection', layout)
+            window = sg.Window('Network Selection', layout)
 
             while True:
                 event, values = window.read()
 
                 if event == 'OK':
                     label = values['label']
+                    laterality = values['laterality']
+                    location = values['location']
                     break
 
             window.close()
 
-            # Write the label to the CSV file
-            writer.writerow([subject_idx, component_idx, label])
+            # Write the label, laterality, and location to the CSV file
+            writer.writerow([subject_idx, component_idx, label, laterality, location])
 
             # Terminate the FSLeyes process to close the window
             fsl_process.terminate()
@@ -129,7 +148,6 @@ def process_subject(subject_idx, func_file):
     os.remove(original_file_name)
 
     return components_img
-
 
 # Parallel processing of subjects
 results = Parallel(n_jobs=-1)(
