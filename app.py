@@ -3,7 +3,7 @@ import sys
 import warnings
 import nibabel as nib
 from nilearn.datasets import fetch_adhd
-from nilearn.decomposition import DictLearning
+from nilearn.decomposition import DictLearning, CanICA
 import time
 from joblib import Parallel, delayed
 from tqdm import tqdm
@@ -34,32 +34,62 @@ os.makedirs(processed_dir, exist_ok=True)
 rest_dataset = fetch_adhd(n_subjects=N_SUBJECTS)
 func_filenames = rest_dataset.func
 
-# Initialize DictLearning object
-dict_learn = DictLearning(
-    n_components=COMPONENTS,
-    smoothing_fwhm=6.0,
-    memory="nilearn_cache",
-    memory_level=2,
-    random_state=0,
-    standardize="zscore_sample",
-    n_jobs=-1,
-)
+# Ask the user which algorithm to use
+layout = [
+    [sg.Text('Choose the algorithm:')],
+    [sg.Radio('Dictionary Learning', "RADIO1", default=True, key='dict_learning'), 
+     sg.Radio('Independent Component Analysis (ICA)', "RADIO1", key='ica')],
+    [sg.Button('OK')]
+]
+
+window = sg.Window('Algorithm Selection', layout)
+
+while True:
+    event, values = window.read()
+
+    if event == 'OK':
+        if values['dict_learning']:
+            algorithm = 'dict_learning'
+        elif values['ica']:
+            algorithm = 'ica'
+        break
+
+window.close()
+
+# Initialize the decomposition object
+if algorithm == 'dict_learning':
+    decomposition_object = DictLearning(
+        n_components=COMPONENTS,
+        smoothing_fwhm=6.0,
+        memory="nilearn_cache",
+        memory_level=2,
+        random_state=0,
+        standardize="zscore_sample",
+        n_jobs=-1,
+    )
+elif algorithm == 'ica':
+    decomposition_object = CanICA(
+        n_components=COMPONENTS,
+        smoothing_fwhm=6.0,
+        memory="nilearn_cache",
+        memory_level=2,
+        random_state=0,
+        standardize="zscore_sample",
+        n_jobs=-1,
+    )
 
 total_subjects = len(func_filenames)
 start_time = time.time()
 
 # Function to fit the data and return the components_img
-# ...
-
-# Function to fit the data and return the components_img
 def process_subject(subject_idx, func_file):
-    dict_learn.fit(func_file)
+    decomposition_object.fit(func_file)
 
     # Save the original file
     original_file_name = os.path.join(original_dir, f'original_{subject_idx}.nii.gz')
     nib.save(nib.load(func_file), original_file_name)
 
-    components_img = dict_learn.components_img_
+    components_img = decomposition_object.components_img_
 
     # Generate a timestamp for the CSV file name
     timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -132,44 +162,15 @@ def process_subject(subject_idx, func_file):
 
             window.close()
 
-            # Write the label, laterality, and location to the CSV file
-            writer.writerow([subject_idx, component_idx, label, laterality, location])
+            # Write the chosen labels to the CSV file
+            writer.writerow([subject_idx, component_idx + 1, label, laterality, location])
 
-            # Terminate the FSLeyes process to close the window
+            # Close FSLeyes
             fsl_process.terminate()
 
-            # Wait for the process to terminate and ensure the window is closed
-            fsl_process.wait()
+    return True
 
-            # Delete the processed component .nii file
-            os.remove(component_file_name)
+# Use joblib to run the function in parallel for each subject
+Parallel(n_jobs=-1)(delayed(process_subject)(subject_idx, func_file) for subject_idx, func_file in tqdm(enumerate(func_filenames), total=total_subjects))
 
-    # Delete the original file for the subject
-    os.remove(original_file_name)
-
-    return components_img
-
-# Parallel processing of subjects
-results = Parallel(n_jobs=-1)(
-    delayed(process_subject)(subject_idx + 1, func_file)
-    for subject_idx, func_file in enumerate(func_filenames[:N_SUBJECTS])
-)
-
-# Create a progress bar
-progress_bar = tqdm(total=total_subjects, desc="Processing Subjects")
-
-# Process the results
-for subject_idx, components_img in enumerate(results, start=1):
-    # Update the progress bar
-    progress_bar.update(1)
-    progress_bar.set_postfix_str(f"Processed Subject {subject_idx}")
-
-    # Calculate time remaining
-    elapsed_time = time.time() - start_time
-    time_per_subject = elapsed_time / subject_idx
-    subjects_remaining = total_subjects - subject_idx
-    time_remaining = subjects_remaining * time_per_subject
-    progress_bar.set_postfix({"Time Remaining": f"{time_remaining:.2f} seconds"})
-
-# Close the progress bar
-progress_bar.close()
+print("--- %s seconds ---" % (time.time() - start_time))
