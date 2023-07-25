@@ -40,7 +40,6 @@ To set up the environment for running the script, you have two options: creating
 
 #### Create a conda environment
 
-Using the provided environment.yml file:
 ```bash
 conda env create -f environment.yml
 ```
@@ -53,8 +52,6 @@ conda env create -f environment.yml
 pip install requirements.txt
 ```
 
-Choose the option that best suits your needs and system configuration. Once you have completed the setup, you will be ready to run the script.
-
 # Usage
 
 Run the script using the following command:
@@ -66,13 +63,5 @@ Replace `<N_SUBJECTS>` with the desired number of subjects and `<N_COMPONENTS>` 
 ```bash
 python app.py 5 10
 ```
-The script will fetch the fMRI dataset (ADHD dataset) using the nilearn.datasets module. It will then perform DictLearning on the specified number of subjects and save the resulting components as separate NIfTI files.
-
-During the processing, FSLeyes will be launched to display the original and component images for each subject. You can use the PySimpleGUI dropdown GUI to select the label for each component.
-
-The processed component files will be saved in the processed_nii_files directory, and the labels will be saved in a timestamped CSV file.
-
-Please note that the script assumes the necessary directory structure (original_nii_files and processed_nii_files) exists in the current working directory. If the directories don't exist, the script will create them.
-
 # Disclaimer
 This script is provided as-is and without any warranty. Use it at your own risk. Ensure you have sufficient disk space and computational resources to perform the processing for the specified number of subjects and components.
