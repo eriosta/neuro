@@ -21,7 +21,7 @@ python app.py <N_SUBJECTS> <N_COMPONENTS>
 ```
 
 ```bash
-python app.py --n_subjects 30 --n_components 200
+python app.py 30 200
 ```
 # Prerequisites
 To set up the environment for running the script, you have two options: creating a conda environment or installing the required libraries using pip.
@@ -55,7 +55,7 @@ conda install -c conda-forge nilearn=0.10.1 nibabel=5.0.1 joblib=1.1.1 tqdm=4.64
 * [Download Python](https://www.python.org/downloads/)
 #### Install the required libraries using pip
 ```bash
-pip install nibabel==5.0.1 nilearn==0.10.1 joblib==1.1.1 tqdm==4.64.1 PySimpleGUI==4.60.5
+pip install requirements.txt
 ```
 
 Choose the option that best suits your needs and system configuration. Once you have completed the setup, you will be ready to run the script.
