@@ -40,16 +40,11 @@ To set up the environment for running the script, you have two options: creating
 
 #### Create a conda environment
 
-**Option 1:** Using the provided environment.yml file:
+Using the provided environment.yml file:
 ```bash
 conda env create -f environment.yml
 ```
-**Option 2:** Manually creating the environment:
-```bash
-conda create -n my_environment_name python=3.10
-conda activate my_environment_name
-conda install -c conda-forge nilearn=0.10.1 nibabel=5.0.1 joblib=1.1.1 tqdm=4.64.1 pysimplegui=4.60.5
-```
+
 ### Option 2: Pip Installation
 #### Install Python
 * [Download Python](https://www.python.org/downloads/)
