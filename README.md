@@ -85,7 +85,7 @@ conda env create -f environment.yml
 * [Download Python](https://www.python.org/downloads/)
 #### Install the required libraries using pip
 ```bash
-pip install requirements.txt
+pip install local_requirements.txt
 ```
 
 # Usage
