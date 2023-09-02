@@ -1,11 +1,8 @@
-nilearn==0.10.1
-nibabel==5.0.1
-joblib==1.1.1
-tqdm==4.64.1
-PySimpleGUI==4.60.5
 streamlit
 numpy
 scipy
 seaborn
 matplotlib
 pandas
+nilearn
+nibabel
