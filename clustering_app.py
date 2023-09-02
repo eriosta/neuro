@@ -3,7 +3,9 @@ import time  # Add the time module
 import pandas as pd  # Add the pandas library
 from clustering import *
 from nilearn import datasets
-
+import streamlit as st
+import nilearn.datasets as datasets
+    
 order_components = 20
 correlation_tool = ComponentCorrelation(n_order=order_components)
 
@@ -13,23 +15,70 @@ adhd_dataset = datasets.fetch_adhd(n_subjects=n_subjects)
 func_filenames = adhd_dataset.func
 fwhm = 6
 
+decomposition_key = {
+    'Dictionary Learning':'dict_learning',
+    'ICA':'ica'
+}
+
 def main():
-    st.title("Cluster Visualization Tool")
+    st.sidebar.title("Subject-Level Functional Network Analysis")
     
-    # Create a slider to adjust t value
-    t = st.slider("Set the distance threshold (t)", min_value=0.5, max_value=5.0, value=1.5, step=0.1)
+    # Grouping & Spacing: Organize controls in expandable sections
+    with st.sidebar.expander("Clustering Parameters",expanded=True):
+        t = st.slider(
+            "Hierarchical clustering distance threshold (t)", 
+            min_value=0.5, max_value=5.0, value=1.5, step=0.1, 
+            help="Adjust the distance threshold used during hierarchical clustering. Lower values yield more clusters, capturing finer details of the functional networks, while higher values result in fewer clusters, possibly representing larger network structures."
+        )
+
+        p_threshold = st.slider(
+            "Pearson correlation p-value threshold", 
+            min_value=0.001, max_value=0.1, value=0.01, step=0.01, 
+            help="Set the significance level for Pearson correlation between time courses of regions/nodes in the functional network. Lower thresholds make correlations more stringent, potentially reducing false positives but may increase false negatives."
+        )
     
-    # Create a slider to adjust order_components value
-    order_components = st.slider("Set the number of order_components", min_value=5, max_value=50, value=20, step=1)
+    with st.sidebar.expander("Decomposition",expanded=True):
+        order_components = st.slider(
+            "Number of functional components", 
+            min_value=5, max_value=50, value=20, step=1, 
+            help="Specify the number of functional components (or networks) to extract from the fMRI data. This determines the dimensionality of the data after decomposition. Increasing the number of components can capture more nuanced functional activity but risks overfitting."
+        )
+
+        decomposition_type = st.radio(
+            "Choose decomposition type", 
+            {'Dictionary Learning': 'dict_learning', 'ICA': 'ica'}, 
+            help="Select the decomposition technique. Both methods extract functional components from the fMRI data, but their underlying assumptions and processes differ."
+        )
+
+        if decomposition_type == 'Dictionary Learning':
+            st.info(
+                "**Dictionary Learning**:\n"
+                "- **How it works**: This technique learns a dictionary of basis functions (or 'atoms') which best represents the input data in a sparse manner.\n"
+                "- **Pros**: Good for extracting temporally independent networks. Often leads to more interpretable results.\n"
+                "- **Cons vs. ICA**: Dictionary Learning doesn't guarantee spatial or temporal independence and might be computationally intensive for large datasets."
+            )
+
+        elif decomposition_type == 'ICA':
+            st.info(
+                "**ICA (Independent Component Analysis)**:\n"
+                "- **How it works**: Assumes fMRI signals are mixtures of independent non-Gaussian source signals. Decomposes data into such source signals maximizing their statistical independence.\n"
+                "- **Pros**: Widely used for its ability to extract spatially independent brain networks.\n"
+                "- **Cons vs. Dictionary Learning**: Some ICA components can be hard to interpret or might represent noise."
+            )
     
+    # Descriptions
+    st.sidebar.markdown("After selecting parameters, click on **Run**. This will initiate the analysis based on your settings. The results will be visualized in the main panel.")
+
     # Add "Run" button
-    run_button = st.button("Run")
+    run_button = st.sidebar.button("Run")
     
     if run_button:
         st.write(f"Visualizing component correlation with t = {t}")
         
+        # Create a slider to adjust the significance level
+                
         correlation_tool = ComponentCorrelation(n_order=order_components)  # Update correlation_tool with user-defined order_components
-        correlation_tool.visualize_component_correlation(streamlit=True)
+        correlation_tool.visualize_component_correlation(streamlit=True,p_threshold=p_threshold,decomposition_type=decomposition_key[decomposition_type])
         clusters = correlation_tool.extract_clusters(t=t)
         
         # Convert clusters dictionary to a DataFrame
@@ -52,7 +101,7 @@ def main():
                 st.write("Processing and visualizing components...")
                 
                 start_time = time.time()  # Start measuring time
-                visualizer.process_and_visualize(streamlit=True)
+                visualizer.process_and_visualize(streamlit=True,decomposition_type=decomposition_key[decomposition_type])
                 end_time = time.time()  # Stop measuring time
                 
                 elapsed_time = end_time - start_time
