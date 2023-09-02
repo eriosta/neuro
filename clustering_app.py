@@ -42,8 +42,8 @@ def measure_resources(func):
 
 
         # Display in Streamlit
-        st.sidebar.info(f"Memory used by function {func.__name__}: {end_mem - start_mem:.2f} MB")
-        st.sidebar.info(f"CPU time used by function {func.__name__}: {end_cpu - start_cpu:.2f} seconds")
+        st.sidebar.info(f"Memory used by function `{func.__name__}`: {end_mem - start_mem:.2f} MB")
+        st.sidebar.info(f"CPU time used by function `{func.__name__}`: {end_cpu - start_cpu:.2f} seconds")
         
         return result
     return wrapper
