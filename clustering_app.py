@@ -21,6 +21,34 @@ decomposition_key = {
 }
 
 def main():
+    # Introduction and Background
+    st.title("Subject-Level Functional Network Analysis")
+    st.write(
+        """
+        Welcome to the Subject-Level Functional Network Analysis App! This tool is designed to 
+        analyze and visualize functional networks in fMRI data using various decomposition techniques.
+
+        **Background**: Functional Magnetic Resonance Imaging (fMRI) provides insights into brain 
+        activity by detecting changes in blood flow. Through fMRI data decomposition, one can isolate 
+        individual networks or components of brain activity, leading to better understandings of cognitive 
+        processes. This analysis is currently focused on a single subject's data from the [ADHD200 dataset](https://nilearn.github.io/dev/modules/generated/nilearn.datasets.fetch_adhd.html).
+
+        """
+    )
+    # Tutorial Steps
+    st.subheader("How to use this app:")
+    st.write(
+        """
+        1. **Select Parameters**: Adjust the clustering parameters and decomposition settings in the sidebar 
+           according to your requirements.
+        2. **Run Analysis**: After adjusting the settings, click the **Run** button. 
+        3. **View Results**: The results will be displayed on this main panel, where you'll see visualizations 
+           and other outputs based on your selected parameters.
+
+        Start by adjusting the parameters in the sidebar to the left!
+        """
+    )
+
     st.sidebar.title("Subject-Level Functional Network Analysis")
     
     # Grouping & Spacing: Organize controls in expandable sections
