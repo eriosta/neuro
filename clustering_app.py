@@ -7,7 +7,9 @@ import streamlit as st
 import nilearn.datasets as datasets
 import psutil
 import os
-    
+
+st.set_page_config(page_title="NeuroImage", page_icon=":brain:")
+
 order_components = 20
 correlation_tool = ComponentCorrelation(n_order=order_components)
 
