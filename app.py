@@ -151,28 +151,25 @@ def main():
 
     @measure_resources
     def process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key):
-        # This will hold all the coordinate data
-        all_coordinates = {}
+        # Define the list to hold our results
+        all_clusters_coordinates = []
 
         for i, func_file in enumerate(func_filenames):
             for cluster_id, component_indices in clusters.items():
                 st.write(f"Visualizing components for cluster {cluster_id}")
 
-                visualizer = ComponentVisualization(func_file, order_components, component_indices, fwhm, i)
-                coords_data = visualizer.process_and_visualize(streamlit=True, decomposition_type=decomposition_key[decomposition_type])
-
-                # Assuming coords_data is a list of dictionaries with structure [{component_index: [x, y, z]}, ...]
-                if cluster_id not in all_coordinates:
-                    all_coordinates[cluster_id] = {}
+                cluster_coordinates = {'cluster_id': cluster_id, 'components': {}}
                 
-                for coord in coords_data:
-                    for component_idx, coordinate in coord.items():
-                        if component_idx not in all_coordinates[cluster_id]:
-                            all_coordinates[cluster_id][component_idx] = []
-                        all_coordinates[cluster_id][component_idx].append(coordinate)
+                visualizer = ComponentVisualization(func_file, order_components, component_indices, fwhm, i)
+                
+                for component in component_indices:
+                    x_coord, y_coord, z_coord = visualizer.process_and_visualize(component, streamlit=True, decomposition_type=decomposition_key[decomposition_type])
+                    cluster_coordinates['components'][component] = [x_coord, y_coord, z_coord]
 
-        # Save the coordinates to Streamlit's session state
-        st.session_state.coordinates = all_coordinates
+                all_clusters_coordinates.append(cluster_coordinates)
+
+        # Save to Streamlit session_state
+        st.session_state.coordinates = all_clusters_coordinates
 
     if run_button:
         st.header("Starting analysis...")
