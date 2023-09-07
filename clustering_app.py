@@ -163,13 +163,19 @@ def main():
 
     @measure_resources
     def process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key):
+
         # Define the list to hold our results
         all_clusters_coordinates = []
-
+    
+        # Create a progress bar on the sidebar
+        progress_bar = st.sidebar.progress(0)
+        total_clusters = len(clusters)
+        processed_clusters = 0
+    
         for i, func_file in enumerate(func_filenames):
             for cluster_id, component_indices in clusters.items():
                 st.info(f"Visualizing components for cluster {cluster_id}")
-
+    
                 cluster_coordinates = {'cluster_id': cluster_id, 'components': {}}
                     
                 visualizer = ComponentVisualization(func_file, order_components, component_indices, fwhm, i)
@@ -183,12 +189,18 @@ def main():
                         'z': coords[2]
                     }
                     cluster_coordinates['components'][component] = coordinates_dict
-
+    
                 all_clusters_coordinates.append(cluster_coordinates)
-
+    
+                # Update the progress bar
+                processed_clusters += 1
+                progress = processed_clusters / total_clusters
+                progress_bar.progress(progress)
+    
                 st.warning(f"Done with cluster {cluster_id}. Moving to the next cluster.")
-
+    
             st.info("Done! Getting Coordinates...")
+
 
         # Saving the results as a JSON file locally
         with open('clusters_coordinates.json', 'w') as json_file:
