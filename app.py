@@ -184,8 +184,8 @@ def main():
         display_clusters(clusters)
         process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key)
 
-        if 'all_coordinates' in st.session_state:
-            st.json(st.session_state['all_coordinates'])
+        if 'coordinates' in st.session_state:
+            st.json(st.session_state['coordinates'])
 
 if __name__ == "__main__":
     main()
