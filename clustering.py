@@ -164,16 +164,14 @@ class ComponentVisualization:
         for idx, component in enumerate(self.component_indices):
             plt.figure(figsize=(15, 15))  # Create a new figure for each component
             component_img = image.index_img(self.components_img_subject, component)
-            y_coord = plotting.find_xyz_cut_coords(component_img)[1]
+            x_coord, y_coord, z_coord = plotting.find_xyz_cut_coords(component_img)
             title_component = f'S{self.subject_index}C{component}'
-            
-            plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=[y_coord], display_mode='y', title=title_component, colorbar=False)
+            plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=(x_coord, y_coord, z_coord), display_mode='ortho', title=title_component, colorbar=False)
             
             if streamlit is not None:
                 st.pyplot(plt)  # Plot the figure in Streamlit
             
             plt.show()
-
 
     def process_and_visualize(self,streamlit,decomposition_type):
         self.apply_decomposition(decomposition_type)
