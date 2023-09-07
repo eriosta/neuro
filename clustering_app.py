@@ -88,10 +88,6 @@ def main():
     )
 
     st.sidebar.title("Subject-Level Functional Network Analysis")
-    
-    with st.sidebar.expander("Cluster Labeling", expanded=True):
-        label_clusters = st.checkbox("Label clusters?", help="Check this box to label clusters.")
-        st.session_state['label_clusters'] = label_clusters
         
     # Grouping & Spacing: Organize controls in expandable sections
     with st.sidebar.expander("Clustering Parameters",expanded=True):
@@ -163,18 +159,25 @@ def main():
 
     @measure_resources
     def process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key):
+        cluster_labels = ['','Left Hemisphere','Right Hemisphere','Background', 'Frontal Pole', 'Insular Cortex', 'Superior Frontal Gyrus', 'Middle Frontal Gyrus', 'Inferior Frontal Gyrus, pars triangularis', 'Inferior Frontal Gyrus, pars opercularis', 'Precentral Gyrus', 'Temporal Pole', 'Superior Temporal Gyrus, anterior division', 'Superior Temporal Gyrus, posterior division', 'Middle Temporal Gyrus, anterior division', 'Middle Temporal Gyrus, posterior division', 'Middle Temporal Gyrus, temporooccipital part', 'Inferior Temporal Gyrus, anterior division', 'Inferior Temporal Gyrus, posterior division', 'Inferior Temporal Gyrus, temporooccipital part', 'Postcentral Gyrus', 'Superior Parietal Lobule', 'Supramarginal Gyrus, anterior division', 'Supramarginal Gyrus, posterior division', 'Angular Gyrus', 'Lateral Occipital Cortex, superior division', 'Lateral Occipital Cortex, inferior division', 'Intracalcarine Cortex', 'Frontal Medial Cortex', 'Juxtapositional Lobule Cortex (formerly Supplementary Motor Cortex)', 'Subcallosal Cortex', 'Paracingulate Gyrus', 'Cingulate Gyrus, anterior division', 'Cingulate Gyrus, posterior division', 'Precuneous Cortex', 'Cuneal Cortex', 'Frontal Orbital Cortex', 'Parahippocampal Gyrus, anterior division', 'Parahippocampal Gyrus, posterior division', 'Lingual Gyrus', 'Temporal Fusiform Cortex, anterior division', 'Temporal Fusiform Cortex, posterior division', 'Temporal Occipital Fusiform Cortex', 'Occipital Fusiform Gyrus', 'Frontal Operculum Cortex', 'Central Opercular Cortex', 'Parietal Operculum Cortex', 'Planum Polare', "Heschl's Gyrus (includes H1 and H2)", 'Planum Temporale', 'Supracalcarine Cortex', 'Occipital Pole']
+
         # Define the list to hold our results
         all_clusters_coordinates = []
 
         for i, func_file in enumerate(func_filenames):
             for cluster_id, component_indices in clusters.items():
-                st.info(f"Visualizing components for cluster {cluster_id}")
+                st.write(f"Visualizing components for cluster {cluster_id}")
 
                 cluster_coordinates = {'cluster_id': cluster_id, 'components': {}}
                     
                 visualizer = ComponentVisualization(func_file, order_components, component_indices, fwhm, i)
                     
                 visualization_results = visualizer.process_and_visualize(streamlit=True, decomposition_type=decomposition_key[decomposition_type])
+
+                # Check if the result is None or not an iterable
+                if visualization_results is None or not hasattr(visualization_results, '__iter__'):
+                    st.warning(f"Done with cluster {cluster_id}. Moving to the next cluster.")
+                    continue
                     
                 for component, coords in zip(component_indices, visualization_results):
                     coordinates_dict = {
@@ -186,7 +189,9 @@ def main():
 
                 all_clusters_coordinates.append(cluster_coordinates)
 
-                st.warning(f"Done with cluster {cluster_id}. Moving to the next cluster.")
+        # Allow user to rename clusters
+        for cluster in all_clusters_coordinates:
+            cluster['cluster_id'] = st.selectbox(f"Rename cluster {cluster['cluster_id']}:", cluster_labels)
 
         # Saving the results as a JSON file locally
         with open('clusters_coordinates.json', 'w') as json_file:
@@ -214,20 +219,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-
-# import json
-# import streamlit as st
-
-# def generate_cluster_annotations(clusters, cluster_labels):
-#     annotations = {}
-#     for cluster_id, component_indices in clusters.items():
-#         selected_label = st.selectbox(f'Select label for cluster {cluster_id}', cluster_labels)
-#         annotations[cluster_id] = f"{selected_label} is determined by components {component_indices}"
-#     with open('cluster_annotations.json', 'w') as f:
-#         json.dump(annotations, f)
-
-# # Call the function after clusters are generated
-# # User defined cluster labels
-# cluster_labels = ['','Left Hemisphere','Right Hemisphere','Background', 'Frontal Pole', 'Insular Cortex', 'Superior Frontal Gyrus', 'Middle Frontal Gyrus', 'Inferior Frontal Gyrus, pars triangularis', 'Inferior Frontal Gyrus, pars opercularis', 'Precentral Gyrus', 'Temporal Pole', 'Superior Temporal Gyrus, anterior division', 'Superior Temporal Gyrus, posterior division', 'Middle Temporal Gyrus, anterior division', 'Middle Temporal Gyrus, posterior division', 'Middle Temporal Gyrus, temporooccipital part', 'Inferior Temporal Gyrus, anterior division', 'Inferior Temporal Gyrus, posterior division', 'Inferior Temporal Gyrus, temporooccipital part', 'Postcentral Gyrus', 'Superior Parietal Lobule', 'Supramarginal Gyrus, anterior division', 'Supramarginal Gyrus, posterior division', 'Angular Gyrus', 'Lateral Occipital Cortex, superior division', 'Lateral Occipital Cortex, inferior division', 'Intracalcarine Cortex', 'Frontal Medial Cortex', 'Juxtapositional Lobule Cortex (formerly Supplementary Motor Cortex)', 'Subcallosal Cortex', 'Paracingulate Gyrus', 'Cingulate Gyrus, anterior division', 'Cingulate Gyrus, posterior division', 'Precuneous Cortex', 'Cuneal Cortex', 'Frontal Orbital Cortex', 'Parahippocampal Gyrus, anterior division', 'Parahippocampal Gyrus, posterior division', 'Lingual Gyrus', 'Temporal Fusiform Cortex, anterior division', 'Temporal Fusiform Cortex, posterior division', 'Temporal Occipital Fusiform Cortex', 'Occipital Fusiform Gyrus', 'Frontal Operculum Cortex', 'Central Opercular Cortex', 'Parietal Operculum Cortex', 'Planum Polare', "Heschl's Gyrus (includes H1 and H2)", 'Planum Temporale', 'Supracalcarine Cortex', 'Occipital Pole']
-# generate_cluster_annotations(clusters, cluster_labels)
