@@ -1,191 +1,181 @@
-import base64
+import numpy as np
+
+from scipy.stats import pearsonr
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+from nilearn import datasets, image, plotting, decomposition
+from scipy.cluster.hierarchy import leaves_list, linkage
+from scipy.cluster.hierarchy import fcluster
 import streamlit as st
-import time  # Add the time module
-import pandas as pd  # Add the pandas library
-from clustering import *
-from nilearn import datasets
-import nilearn.datasets as datasets
-import psutil
-import os
-    
-order_components = 20
-correlation_tool = ComponentCorrelation(n_order=order_components)
+from nilearn.decomposition import CanICA, DictLearning
+from joblib import Parallel, delayed
 
-# Fetch the ADHD200 resting-state fMRI dataset
-n_subjects = 1
-adhd_dataset = datasets.fetch_adhd(n_subjects=n_subjects)
-func_filenames = adhd_dataset.func
-fwhm = 6
 
-decomposition_key = {
-    'Dictionary Learning':'dict_learning',
-    'ICA':'ica'
-}
+class ComponentCorrelation:
+    def __init__(self, n_order, memory_level=2, cache_dir="nilearn_cache"):
+        self.n_order = n_order
+        self.cache_dir = cache_dir
+        self.memory_level = memory_level
 
-def measure_resources(func):
-    def wrapper(*args, **kwargs):
-        # Measure memory before function
-        process = psutil.Process(os.getpid())
-        start_mem = process.memory_info().rss / 1024 ** 2  # Convert bytes to MB
-        # Measure CPU usage before function
-        start_cpu = time.process_time()
-        result = func(*args, **kwargs)
-        # Measure memory after function
-        end_mem = process.memory_info().rss / 1024 ** 2
-        # Measure CPU usage after function
-        end_cpu = time.process_time()
-        # Display in Streamlit
-        st.toast(f"Memory used by function `{func.__name__}`: {end_mem - start_mem:.2f} MB")
-        st.toast(f"CPU time used by function `{func.__name__}`: {end_cpu - start_cpu:.2f} seconds")
+    def _fetch_data(self):
+        """Fetch sample functional data for testing."""
+        dataset = datasets.fetch_adhd(n_subjects=1)
+        self.func_filename = [image.concat_imgs(dataset.func)]
+        self.affine = self.func_filename[0].affine
+
+    def _perform_decomposition(self, decomposition_type='dict_learning'):
+        options = {
+            "random_state": 0,
+            "memory": self.cache_dir,
+            "memory_level": self.memory_level
+        }
+        if decomposition_type == 'dict_learning':
+            decomposition_model = DictLearning(n_components=self.n_order, **options, n_jobs=-1)
+        elif decomposition_type == 'ica':
+            decomposition_model = CanICA(n_components=self.n_order, **options, n_jobs=-1)
+        else:
+            raise ValueError("Invalid decomposition_type. Choose 'dict_learning' or 'ica'.")
+            
+        results = decomposition_model.fit_transform(self.func_filename)
+        self.components_img = results[0]
+
+    def _compute_correlation_matrix(self, p_threshold=0.01):
+        self.correlation_matrix = np.zeros((self.n_order, self.n_order))
+        self.results = []
+        for i in range(self.n_order):
+            for j in range(self.n_order):
+                data_i = self.components_img[..., i]
+                data_j = self.components_img[..., j]
+                if data_i.size > 1 and data_j.size > 1:
+                    correlation, p_value = pearsonr(data_i.ravel(), data_j.ravel())
+                    if p_value < p_threshold:  # Check if p-value is significant based on user input
+                        self.results.append({
+                            'Component_1': i,
+                            'Component_2': j,
+                            'Pearson_r': correlation,
+                            'p_value': p_value
+                        })
+                        self.correlation_matrix[i, j] = correlation
+        self.correlation_matrix = np.nan_to_num(self.correlation_matrix)
+
+    def _plot_heatmap(self, streamlit=None):
+        diverging_cmap = plt.cm.RdBu_r
+        figsize = (10, 5)
+        cluster_grid = sns.clustermap(self.correlation_matrix, method="average", cmap=diverging_cmap, vmin=-1, vmax=1, annot=False, fmt=".2f", figsize=figsize)
+        plt.close()  # Close the figure to prevent duplicate plots
         
-        return result
-    return wrapper
+        if streamlit is not None:
+            st.pyplot(cluster_grid.fig)  # Display the clustermap figure in Streamlit
+            
+        # Get the order of the components after hierarchical clustering
+        self.ordered_components = leaves_list(linkage(self.correlation_matrix, method='average'))
 
-# Add the @measure_resources decorator to functions you want to measure
+    def get_ordered_components(self):
+        """Return the ordered list of component indices."""
+        if hasattr(self, 'ordered_components'):
+            return self.ordered_components
+        else:
+            raise AttributeError("Please run 'visualize_component_correlation' first to generate the ordered components.")
 
-def main():
+    def export_results_to_csv(self, filename="correlation_results.csv"):
+        df = pd.DataFrame(self.results)
+        df = df.sort_values(by='p_value')
+        df.to_csv(filename, index=False)
 
-    order_components = 20
-    correlation_tool = ComponentCorrelation(n_order=order_components)
-
-    # Introduction and Background
-    st.info(
-        """
-        Welcome to the Subject-Level Functional Network Analysis App! This tool is designed to 
-        analyze and visualize functional networks in fMRI data using various decomposition techniques.
-
-        **Background**: Functional Magnetic Resonance Imaging (fMRI) provides insights into brain 
-        activity by detecting changes in blood flow. Through fMRI data decomposition, one can isolate 
-        individual networks or components of brain activity, leading to better understandings of cognitive 
-        processes. This analysis is currently focused on a single subject's data from the [ADHD200 dataset](https://nilearn.github.io/dev/modules/generated/nilearn.datasets.fetch_adhd.html).
-
-        """
-    )
-    # Tutorial Steps
-    st.info(
-        """
-        **How to use this app:**
-        1. **Select Parameters**: Adjust the clustering parameters and decomposition settings in the sidebar 
-           according to your requirements.
-        2. **Run Analysis**: After adjusting the settings, click the **Run** button. 
-        3. **View Results**: The results will be displayed on this main panel, where you'll see visualizations 
-           and other outputs based on your selected parameters.
-
-        Start by adjusting the parameters in the sidebar to the left!
-        """
-    )
-
-    st.sidebar.title("Subject-Level Functional Network Analysis")
-    
-    with st.sidebar.expander("Cluster Labeling", expanded=True):
-        label_clusters = st.checkbox("Label clusters?", help="Check this box to label clusters.")
-        st.session_state['label_clusters'] = label_clusters
+    def visualize_component_correlation(self,streamlit,p_threshold,decomposition_type):
+        self._fetch_data()
+        self._perform_decomposition(decomposition_type)
+        self._compute_correlation_matrix(p_threshold)
+        self._plot_heatmap(streamlit)
+        self.export_results_to_csv()
         
-    # Grouping & Spacing: Organize controls in expandable sections
-    with st.sidebar.expander("Clustering Parameters",expanded=True):
-        t = st.slider(
-            "Hierarchical clustering distance threshold (t)", 
-            min_value=0.5, max_value=5.0, value=1.5, step=0.1, 
-            help="Adjust the distance threshold used during hierarchical clustering. Lower values yield more clusters, capturing finer details of the functional networks, while higher values result in fewer clusters, possibly representing larger network structures."
-        )
-
-        p_threshold = st.slider(
-            "Pearson correlation p-value threshold", 
-            min_value=0.001, max_value=0.1, value=0.01, step=0.01, 
-            help="Set the significance level for Pearson correlation between time courses of regions/nodes in the functional network. Lower thresholds make correlations more stringent, potentially reducing false positives but may increase false negatives."
-        )
-    
-    with st.sidebar.expander("Decomposition",expanded=True):
-        order_components = st.slider(
-            "Number of functional components", 
-            min_value=5, max_value=50, value=20, step=1, 
-            help="Specify the number of functional components (or networks) to extract from the fMRI data. This determines the dimensionality of the data after decomposition. Increasing the number of components can capture more nuanced functional activity but risks overfitting."
-        )
-
-        decomposition_type = st.radio(
-            "Choose decomposition type", 
-            {'Dictionary Learning': 'dict_learning', 'ICA': 'ica'}, 
-            help="Select the decomposition technique. Both methods extract functional components from the fMRI data, but their underlying assumptions and processes differ."
-        )
-
-        if decomposition_type == 'Dictionary Learning':
-            st.info(
-                "**Dictionary Learning**:\n"
-                "- **How it works**: This technique learns a dictionary of basis functions (or 'atoms') which best represents the input data in a sparse manner.\n"
-                "- **Pros**: Good for extracting temporally independent networks. Often leads to more interpretable results.\n"
-                "- **Cons vs. ICA**: Dictionary Learning doesn't guarantee spatial or temporal independence and might be computationally intensive for large datasets."
-            )
-
-        elif decomposition_type == 'ICA':
-            st.info(
-                "**ICA (Independent Component Analysis)**:\n"
-                "- **How it works**: Assumes fMRI signals are mixtures of independent non-Gaussian source signals. Decomposes data into such source signals maximizing their statistical independence.\n"
-                "- **Pros**: Widely used for its ability to extract spatially independent brain networks.\n"
-                "- **Cons vs. Dictionary Learning**: Some ICA components can be hard to interpret or might represent noise."
-            )
-    
-    # Descriptions
-    st.sidebar.markdown("After selecting parameters, click on **Run**. This will initiate the analysis based on your settings. The results will be visualized in the main panel.")
-
-    # Add "Run" button
-    run_button = st.sidebar.button("Run")
-    
-    def initialize_correlation_tool(order_components):
-        return ComponentCorrelation(n_order=order_components)
-
-    @measure_resources
-    def visualize_correlation(correlation_tool, p_threshold, decomposition_type, decomposition_key):
-        correlation_tool.visualize_component_correlation(streamlit=True, p_threshold=p_threshold, decomposition_type=decomposition_key[decomposition_type])
-        return correlation_tool.extract_clusters(t=t)
-
-    def create_clusters_dataframe(clusters):
-        clusters_df = pd.DataFrame([(cluster_id, component_indices) for cluster_id, component_indices in clusters.items()], columns=['Cluster', 'Component Indices'])
-        clusters_df['Component Indices'] = clusters_df['Component Indices'].apply(lambda x: ', '.join(map(str, x)))
-        return clusters_df
-
-    def display_clusters(clusters):
-        st.write("Clusters:")
-        for cluster_id, component_indices in clusters.items():
-            with st.expander(f"Cluster {cluster_id}"):
-                st.write("**Component Indices:**", ', '.join(map(str, component_indices)))
-
-    @measure_resources
-    def process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key):
-        # This will hold all the coordinate data
-        all_coordinates = {}
-
-        for i, func_file in enumerate(func_filenames):
-            for cluster_id, component_indices in clusters.items():
-                st.write(f"Visualizing components for cluster {cluster_id}")
-
-                visualizer = ComponentVisualization(func_file, order_components, component_indices, fwhm, i)
-                coords_data = visualizer.process_and_visualize(streamlit=True, decomposition_type=decomposition_key[decomposition_type])
-
-                # Assuming coords_data is a list of dictionaries with structure [{component_index: [x, y, z]}, ...]
-                if cluster_id not in all_coordinates:
-                    all_coordinates[cluster_id] = {}
-                
-                for coord in coords_data:
-                    for component_idx, coordinate in coord.items():
-                        if component_idx not in all_coordinates[cluster_id]:
-                            all_coordinates[cluster_id][component_idx] = []
-                        all_coordinates[cluster_id][component_idx].append(coordinate)
-
-        # Save the coordinates to Streamlit's session state
-        st.session_state.coordinates = all_coordinates
-
-    if run_button:
-        st.header("Starting analysis...")
-        st.write(f"Visualizing component correlation with t = {t}")
+    def extract_clusters(self, t=1.5):
+        """
+        Extract clusters from the correlation matrix using hierarchical clustering.
         
-        correlation_tool = initialize_correlation_tool(order_components)
-        clusters = visualize_correlation(correlation_tool, p_threshold, decomposition_type, decomposition_key)
-        clusters_df = create_clusters_dataframe(clusters)
-        display_clusters(clusters)
-        process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key)
+        Parameters:
+            t: float, optional (default=1.5)
+                The threshold to form clusters. Components that are closer 
+                than this threshold in the dendrogram will belong to the same cluster.
+        
+        Returns:
+            dict
+                A dictionary with cluster identifiers as keys and lists of 
+                component indices as values.
+        """
+        Z = linkage(self.correlation_matrix, method='average')
+        cluster_assignments = fcluster(Z, t, criterion='distance')
+        clusters = {}
+        for idx, cluster_id in enumerate(cluster_assignments):
+            clusters.setdefault(cluster_id, []).append(idx)
+        return clusters
 
-        if 'all_coordinates' in st.session_state:
-            st.json(st.session_state['all_coordinates'])
 
-if __name__ == "__main__":
-    main()
+class ComponentVisualization:
+    def __init__(self, func_file,n_components,component_indices, fwhm, subject_index, ordered_components=None):
+        self.func_file = func_file
+        self.component_indices = component_indices
+        self.fwhm = fwhm
+        self.subject_index = subject_index
+        self.n_components = n_components
+        self.bg_img = datasets.load_mni152_template()
+        if ordered_components is not None:
+            self.ordered_components = ordered_components
+        else:
+            self.ordered_components = component_indices
+
+    def apply_decomposition(self, decomposition_type='dict_learning'):
+        fmri_subject = image.smooth_img(self.func_file, self.fwhm)
+        if decomposition_type == 'dict_learning':
+            decomposition_model = DictLearning(n_components=self.n_components, random_state=0, n_jobs=-1)
+        elif decomposition_type == 'ica':
+            decomposition_model = CanICA(n_components=self.n_components, random_state=0, n_jobs=-1)
+        else:
+            raise ValueError("Invalid decomposition_type. Choose 'dict_learning' or 'ica'.")
+            
+        decomposition_model.fit(fmri_subject)
+        self.components_img_subject = decomposition_model.components_img_
+
+    # def visualize_components(self,streamlit=None):
+        
+    #     n_cols = len(self.component_indices)  # Determine number of columns by the length of the list of component indices
+    #     n_rows = 1
+    #     fig, axes = plt.subplots(n_rows, n_cols, figsize=(15 * n_cols, 15))
+        
+    #     # If there's only one component, make sure axes is an array for consistency
+    #     if n_cols == 1:
+    #         axes = np.array([axes])
+        
+    #     for idx, component in enumerate(self.component_indices):
+    #         ax = axes[idx]
+    #         component_img = image.index_img(self.components_img_subject, component)
+    #         y_coord = plotting.find_xyz_cut_coords(component_img)[1]
+    #         title_component = f'S{self.subject_index}C{component}'
+    #         plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=[y_coord], display_mode='y', title=title_component, axes=ax, colorbar=False)
+    #     plt.tight_layout()
+    #     plt.show()
+        
+    #     if streamlit is not None:
+    #         st.pyplot(plt)
+
+    def visualize_components(self, streamlit=None):
+        
+        for idx, component in enumerate(self.component_indices):
+            plt.figure(figsize=(15, 15))  # Create a new figure for each component
+            component_img = image.index_img(self.components_img_subject, component)
+            x_coord, y_coord, z_coord = plotting.find_xyz_cut_coords(component_img)
+            title_component = f'S{self.subject_index}C{component}'
+            plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=(x_coord, y_coord, z_coord), display_mode='ortho', title=title_component, colorbar=False)
+            
+            if streamlit is not None:
+                st.pyplot(plt)  # Plot the figure in Streamlit
+            
+            plt.show()
+
+        return (x_coord, y_coord, z_coord)
+    
+
+    def process_and_visualize(self,streamlit,decomposition_type):
+        self.apply_decomposition(decomposition_type)
+        self.visualize_components(streamlit)
