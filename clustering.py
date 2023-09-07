@@ -1,5 +1,4 @@
 import numpy as np
-
 from scipy.stats import pearsonr
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -160,7 +159,9 @@ class ComponentVisualization:
     #         st.pyplot(plt)
 
     def visualize_components(self, streamlit=None):
-        
+            
+        coordinates_list = []  # Initialize an empty list to store the coordinates
+
         for idx, component in enumerate(self.component_indices):
             plt.figure(figsize=(15, 15))  # Create a new figure for each component
             component_img = image.index_img(self.components_img_subject, component)
@@ -168,14 +169,19 @@ class ComponentVisualization:
             title_component = f'S{self.subject_index}C{component}'
             plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=(x_coord, y_coord, z_coord), display_mode='ortho', title=title_component, colorbar=False)
             
+            coordinates_list.append((x_coord, y_coord, z_coord))  # Store the coordinates
+
             if streamlit is not None:
                 st.pyplot(plt)  # Plot the figure in Streamlit
             
             plt.show()
 
-        return (x_coord, y_coord, z_coord)
-    
+        return coordinates_list  # Return the list of coordinates
 
+    
     def process_and_visualize(self,streamlit,decomposition_type):
         self.apply_decomposition(decomposition_type)
-        self.visualize_components(streamlit)
+        coordinates_list = self.visualize_components(streamlit)
+        return coordinates_list
+
+
