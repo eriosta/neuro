@@ -9,7 +9,7 @@ import psutil
 import os
 
 st.set_page_config(page_title="NeuroImage", page_icon=":brain:")
-
+    
 order_components = 20
 correlation_tool = ComponentCorrelation(n_order=order_components)
 
@@ -29,34 +29,29 @@ def measure_resources(func):
         # Measure memory before function
         process = psutil.Process(os.getpid())
         start_mem = process.memory_info().rss / 1024 ** 2  # Convert bytes to MB
-
         # Measure CPU usage before function
         start_cpu = time.process_time()
-
-
         result = func(*args, **kwargs)
-
         # Measure memory after function
         end_mem = process.memory_info().rss / 1024 ** 2
-
         # Measure CPU usage after function
         end_cpu = time.process_time()
-
-
         # Display in Streamlit
-        st.sidebar.info(f"Memory used by function `{func.__name__}`: {end_mem - start_mem:.2f} MB")
-        st.sidebar.info(f"CPU time used by function `{func.__name__}`: {end_cpu - start_cpu:.2f} seconds")
+        st.toast(f"Memory used by function `{func.__name__}`: {end_mem - start_mem:.2f} MB")
+        st.toast(f"CPU time used by function `{func.__name__}`: {end_cpu - start_cpu:.2f} seconds")
         
         return result
     return wrapper
 
 # Add the @measure_resources decorator to functions you want to measure
 
-
 def main():
+
+    order_components = 20
+    correlation_tool = ComponentCorrelation(n_order=order_components)
+
     # Introduction and Background
-    st.title("Subject-Level Functional Network Analysis")
-    st.write(
+    st.info(
         """
         Welcome to the Subject-Level Functional Network Analysis App! This tool is designed to 
         analyze and visualize functional networks in fMRI data using various decomposition techniques.
@@ -69,9 +64,9 @@ def main():
         """
     )
     # Tutorial Steps
-    st.subheader("How to use this app:")
-    st.write(
+    st.info(
         """
+        **How to use this app:**
         1. **Select Parameters**: Adjust the clustering parameters and decomposition settings in the sidebar 
            according to your requirements.
         2. **Run Analysis**: After adjusting the settings, click the **Run** button. 
@@ -84,6 +79,10 @@ def main():
 
     st.sidebar.title("Subject-Level Functional Network Analysis")
     
+    with st.sidebar.expander("Cluster Labeling", expanded=True):
+        label_clusters = st.checkbox("Label clusters?", help="Check this box to label clusters.")
+        st.session_state['label_clusters'] = label_clusters
+        
     # Grouping & Spacing: Organize controls in expandable sections
     with st.sidebar.expander("Clustering Parameters",expanded=True):
         t = st.slider(
@@ -158,17 +157,10 @@ def main():
             for cluster_id, component_indices in clusters.items():
                 st.write(f"Visualizing components for cluster {cluster_id}")
                 visualizer = ComponentVisualization(func_file, order_components, component_indices, fwhm, i)
-                
-                st.write("Processing and visualizing components...")
-                
-                start_time = time.time()  # Start measuring time
                 visualizer.process_and_visualize(streamlit=True, decomposition_type=decomposition_key[decomposition_type])
-                end_time = time.time()  # Stop measuring time
-                
-                elapsed_time = end_time - start_time
-                st.write(f"Time taken: {elapsed_time:.2f} seconds")
         
     if run_button:
+        st.header("Starting analysis...")
         st.write(f"Visualizing component correlation with t = {t}")
         
         correlation_tool = initialize_correlation_tool(order_components)
