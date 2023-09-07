@@ -168,18 +168,13 @@ def main():
 
         for i, func_file in enumerate(func_filenames):
             for cluster_id, component_indices in clusters.items():
-                st.write(f"Visualizing components for cluster {cluster_id}")
+                st.info(f"Visualizing components for cluster {cluster_id}")
 
                 cluster_coordinates = {'cluster_id': cluster_id, 'components': {}}
                     
                 visualizer = ComponentVisualization(func_file, order_components, component_indices, fwhm, i)
                     
                 visualization_results = visualizer.process_and_visualize(streamlit=True, decomposition_type=decomposition_key[decomposition_type])
-
-                # Check if the result is None or not an iterable
-                if visualization_results is None or not hasattr(visualization_results, '__iter__'):
-                    st.warning(f"Done with cluster {cluster_id}. Moving to the next cluster.")
-                    continue
                     
                 for component, coords in zip(component_indices, visualization_results):
                     coordinates_dict = {
@@ -190,6 +185,8 @@ def main():
                     cluster_coordinates['components'][component] = coordinates_dict
 
                 all_clusters_coordinates.append(cluster_coordinates)
+
+                st.warning(f"Done with cluster {cluster_id}. Moving to the next cluster.")
 
         # Saving the results as a JSON file locally
         with open('clusters_coordinates.json', 'w') as json_file:
