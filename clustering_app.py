@@ -188,6 +188,8 @@ def main():
 
                 st.warning(f"Done with cluster {cluster_id}. Moving to the next cluster.")
 
+            st.info("Done! Getting Coordinates...")
+
         # Saving the results as a JSON file locally
         with open('clusters_coordinates.json', 'w') as json_file:
             json.dump(all_clusters_coordinates, json_file, cls=NumpyEncoder)
