@@ -114,6 +114,11 @@ def main():
             min_value=5, max_value=50, value=10, step=1, 
             help="Specify the number of functional components (or networks) to extract from the fMRI data. This determines the dimensionality of the data after decomposition. Increasing the number of components can capture more nuanced functional activity but risks overfitting."
         )
+        fwhm = st.slider(
+            "FWHM of Gaussian smoothing kernel", 
+            min_value=0, max_value=20, value=6, step=1, 
+            help="Specify the full-width at half maximum (FWHM) of the Gaussian smoothing kernel applied to the fMRI data. This parameter controls the amount of spatial smoothing. Increasing the FWHM can improve signal-to-noise ratio but may blur distinct functional regions."
+        )
 
         decomposition_type = st.radio(
             "Choose decomposition type", 
