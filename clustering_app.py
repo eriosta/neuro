@@ -5,6 +5,7 @@ import pandas as pd  # Add the pandas library
 
 from clustering import *
 from encoder import *
+from progress import *
 
 from nilearn import datasets
 import nilearn.datasets as datasets
@@ -163,14 +164,10 @@ def main():
 
     @measure_resources
     def process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key):
-
         # Define the list to hold our results
         all_clusters_coordinates = []
     
-        # Create a progress bar on the sidebar
-        progress_bar = st.sidebar.progress(0)
-        total_clusters = len(clusters)
-        processed_clusters = 0
+        progress_updater = ProgressUpdater(len(clusters))
     
         for i, func_file in enumerate(func_filenames):
             for cluster_id, component_indices in clusters.items():
@@ -192,20 +189,16 @@ def main():
     
                 all_clusters_coordinates.append(cluster_coordinates)
     
-                # Update the progress bar
-                processed_clusters += 1
-                progress = processed_clusters / total_clusters
-                progress_bar.progress(progress)
-    
                 st.warning(f"Done with cluster {cluster_id}. Moving to the next cluster.")
+                
+                progress_updater.update()  # Update the progress
     
             st.info("Done! Getting Coordinates...")
-
-
+    
         # Saving the results as a JSON file locally
         with open('clusters_coordinates.json', 'w') as json_file:
             json.dump(all_clusters_coordinates, json_file, cls=NumpyEncoder)
-
+    
         # Generate a link for the user to download the file
         b64_file_data = get_file_content_as_string('clusters_coordinates.json')
         href = f'<a href="data:file/json;base64,{b64_file_data}" download="clusters_coordinates.json">Download JSON File</a>'
@@ -213,8 +206,7 @@ def main():
         
         st.write("Results saved to `clusters_coordinates.json`")
         st.json(all_clusters_coordinates)
-
-
+    
     if run_button:
         st.header("Starting analysis...")
         st.write(f"Visualizing component correlation with t = {t}")
@@ -224,7 +216,6 @@ def main():
         clusters_df = create_clusters_dataframe(clusters)
         display_clusters(clusters)
         process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key)
-
 
 if __name__ == "__main__":
     main()
