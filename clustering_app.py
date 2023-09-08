@@ -104,7 +104,7 @@ def main():
 
         p_threshold = st.slider(
             "Pearson correlation p-value threshold", 
-            min_value=0.01, max_value=1, value=0.01, step=0.01, 
+            min_value=0.01, max_value=1.0, value=0.01, step=0.01, 
             help="Set the significance level for Pearson correlation between time courses of regions/nodes in the functional network. Lower thresholds make correlations more stringent, potentially reducing false positives but may increase false negatives."
         )
     
