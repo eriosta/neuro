@@ -123,15 +123,15 @@ def main():
         )
 
         if decomposition_type == 'Dictionary Learning':
-            with st.expander("Dictionary Learning - More Info"):
+            if st.checkbox("Show more information for Dictionary Learning"):
                 st.info(
                     "- **How it works**: This technique learns a dictionary of basis functions (or 'atoms') which best represents the input data in a sparse manner.\n"
                     "- **Pros**: Good for extracting temporally independent networks. Often leads to more interpretable results.\n"
                     "- **Cons vs. ICA**: Dictionary Learning doesn't guarantee spatial or temporal independence and might be computationally intensive for large datasets."
                 )
-    
+        
         elif decomposition_type == 'ICA':
-            with st.expander("ICA (Independent Component Analysis) - More Info"):
+            if st.checkbox("Show more information for ICA"):
                 st.info(
                     "- **How it works**: Assumes fMRI signals are mixtures of independent non-Gaussian source signals. Decomposes data into such source signals maximizing their statistical independence.\n"
                     "- **Pros**: Widely used for its ability to extract spatially independent brain networks.\n"
