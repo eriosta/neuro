@@ -141,49 +141,6 @@ class ComponentVisualization:
         decomposition_model.fit(fmri_subject)
         self.components_img_subject = decomposition_model.components_img_
 
-    # def visualize_components(self, streamlit=None):
-        
-    #     coordinates_list = []  # Initialize an empty list to store the coordinates. 
-        
-    #     # Get the mask image once outside the loop, assuming the first functional filename is representative for all
-    #     mask_img = compute_epi_mask(self.func_file)
-    #     masker = NiftiMasker(mask_img=mask_img, standardize=True)
-    #     time_series_all = masker.fit_transform(self.func_file)
-        
-    #     for idx, component in enumerate(self.component_indices):
-    #         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 3))
-            
-    #         # Set the background color for the figure
-    #         fig.patch.set_facecolor('white')
-            
-    #         # Set the background color for the individual subplots
-    #         ax1.set_facecolor('white')
-    #         ax2.set_facecolor('white')
-
-    #         # Brain component visualization on ax1
-    #         component_img = image.index_img(self.components_img_subject, component)
-    #         x_coord, y_coord, z_coord = plotting.find_xyz_cut_coords(component_img)
-    #         title_component = f'S{self.subject_index}C{component}'
-    #         plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=(x_coord, y_coord, z_coord), display_mode='ortho', title=title_component, colorbar=False, axes=ax1)
-            
-    #         coordinates_list.append((x_coord, y_coord, z_coord))  # Store the coordinates
-            
-    #         # Time series visualization on ax2
-    #         time_series = time_series_all[:, component]
-    #         max_int_timepoint = np.argmax(time_series)
-    #         ax2.plot(time_series)
-    #         ax2.scatter(max_int_timepoint, time_series[max_int_timepoint], color='red')
-    #         ax2.set(title=f'Time Series of Component {component}', xlabel='Timepoints', ylabel='Intensity')
-    
-    #         plt.tight_layout()
-            
-    #         if streamlit is not None:
-    #             st.pyplot(plt)  # Plot the figure in Streamlit
-            
-    #         plt.show()
-
-    #     return coordinates_list  # Return the list of coordinates
-
     def visualize_components(self, streamlit=None):
         
         coordinates_list = []  # Initialize an empty list to store the coordinates. 
@@ -194,11 +151,15 @@ class ComponentVisualization:
         time_series_all = masker.fit_transform(self.func_file)
         
         for idx, component in enumerate(self.component_indices):
-            fig, ax1 = plt.subplots(1, 1, figsize=(6, 3))
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 3))
             
             # Set the background color for the figure
             fig.patch.set_facecolor('white')
             
+            # Set the background color for the individual subplots
+            ax1.set_facecolor('white')
+            ax2.set_facecolor('white')
+
             # Brain component visualization on ax1
             component_img = image.index_img(self.components_img_subject, component)
             x_coord, y_coord, z_coord = plotting.find_xyz_cut_coords(component_img)
@@ -207,31 +168,22 @@ class ComponentVisualization:
             
             coordinates_list.append((x_coord, y_coord, z_coord))  # Store the coordinates
             
-            if streamlit is not None:
-                st.pyplot(fig)  # Plot the figure in Streamlit
-            
-            # Time series visualization with Altair
+            # Time series visualization on ax2
             time_series = time_series_all[:, component]
             max_int_timepoint = np.argmax(time_series)
-            df = pd.DataFrame({
-                'Timepoints': range(len(time_series)),
-                'Intensity': time_series
-            })
-            line_chart = alt.Chart(df).mark_line().encode(
-                x='Timepoints',
-                y='Intensity'
-            ).properties(title=f'Time Series of Component {component}')
-            
-            point = alt.Chart(df).mark_point(color='red').encode(
-                x='Timepoints',
-                y='Intensity'
-            ).transform_filter(
-                (alt.datum.Timepoints == max_int_timepoint)
-            )
-            
-            st.altair_chart(line_chart + point)
+            ax2.plot(time_series)
+            ax2.scatter(max_int_timepoint, time_series[max_int_timepoint], color='red')
+            ax2.set(title=f'Time Series of Component {component}', xlabel='Timepoints', ylabel='Intensity')
     
+            plt.tight_layout()
+            
+            if streamlit is not None:
+                st.pyplot(plt)  # Plot the figure in Streamlit
+            
+            plt.show()
+
         return coordinates_list  # Return the list of coordinates
+
 
     def process_and_visualize(self,streamlit,decomposition_type):
         self.apply_decomposition(decomposition_type)
