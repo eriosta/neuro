@@ -15,6 +15,8 @@ import os
 
 import base64
 
+st.set_page_config(layout="wide")
+
 order_components = 20
 correlation_tool = ComponentCorrelation(n_order=order_components)
 
