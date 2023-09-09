@@ -12,6 +12,7 @@ from scipy.cluster.hierarchy import leaves_list, linkage, fcluster
 import streamlit as st
 from joblib import Parallel, delayed
 from nilearn import image
+from nilearn.masking import compute_epi_mask
 
 class ComponentCorrelation:
     def __init__(self, n_order, memory_level=2, cache_dir="nilearn_cache"):
