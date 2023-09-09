@@ -140,28 +140,6 @@ class ComponentVisualization:
         decomposition_model.fit(fmri_subject)
         self.components_img_subject = decomposition_model.components_img_
 
-    # def visualize_components(self,streamlit=None):
-        
-    #     n_cols = len(self.component_indices)  # Determine number of columns by the length of the list of component indices
-    #     n_rows = 1
-    #     fig, axes = plt.subplots(n_rows, n_cols, figsize=(15 * n_cols, 15))
-        
-    #     # If there's only one component, make sure axes is an array for consistency
-    #     if n_cols == 1:
-    #         axes = np.array([axes])
-        
-    #     for idx, component in enumerate(self.component_indices):
-    #         ax = axes[idx]
-    #         component_img = image.index_img(self.components_img_subject, component)
-    #         y_coord = plotting.find_xyz_cut_coords(component_img)[1]
-    #         title_component = f'S{self.subject_index}C{component}'
-    #         plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=[y_coord], display_mode='y', title=title_component, axes=ax, colorbar=False)
-    #     plt.tight_layout()
-    #     plt.show()
-        
-    #     if streamlit is not None:
-    #         st.pyplot(plt)
-
     def visualize_components(self, streamlit=None):
         
         coordinates_list = []  # Initialize an empty list to store the coordinates. 
@@ -174,6 +152,13 @@ class ComponentVisualization:
         for idx, component in enumerate(self.component_indices):
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 3))
             
+            # Set the background color for the figure
+            fig.patch.set_facecolor('white')
+            
+            # Set the background color for the individual subplots
+            ax1.set_facecolor('white')
+            ax2.set_facecolor('white')
+
             # Brain component visualization on ax1
             component_img = image.index_img(self.components_img_subject, component)
             x_coord, y_coord, z_coord = plotting.find_xyz_cut_coords(component_img)
