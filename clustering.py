@@ -14,6 +14,7 @@ from joblib import Parallel, delayed
 from nilearn import image
 from nilearn.masking import compute_epi_mask
 from nilearn import plotting
+import altair as alt
 
 class ComponentCorrelation:
     def __init__(self, n_order, memory_level=2, cache_dir="nilearn_cache"):
@@ -167,20 +168,40 @@ class ComponentVisualization:
             
             coordinates_list.append((x_coord, y_coord, z_coord))  # Store the coordinates
             
-            # Time series visualization on ax2
+            # # Time series visualization on ax2
+            # time_series = time_series_all[:, component]
+            # max_int_timepoint = np.argmax(time_series)
+            # ax2.plot(time_series)
+            # ax2.scatter(max_int_timepoint, time_series[max_int_timepoint], color='red')
+            # ax2.set(title=f'Time Series of Component {component}', xlabel='Timepoints', ylabel='Intensity')
+    
+            # plt.tight_layout()
+            
+            # if streamlit is not None:
+            #     st.pyplot(plt)  # Plot the figure in Streamlit
+            
+            # plt.show()
+            # Time series visualization
             time_series = time_series_all[:, component]
             max_int_timepoint = np.argmax(time_series)
-            ax2.plot(time_series)
-            ax2.scatter(max_int_timepoint, time_series[max_int_timepoint], color='red')
-            ax2.set(title=f'Time Series of Component {component}', xlabel='Timepoints', ylabel='Intensity')
-    
-            plt.tight_layout()
+            df = pd.DataFrame({
+                'Timepoints': range(len(time_series)),
+                'Intensity': time_series
+            })
+            line_chart = alt.Chart(df).mark_line().encode(
+                x='Timepoints',
+                y='Intensity'
+            ).properties(title=f'Time Series of Component {component}')
             
-            if streamlit is not None:
-                st.pyplot(plt)  # Plot the figure in Streamlit
+            point = alt.Chart(df).mark_point(color='red').encode(
+                x='Timepoints',
+                y='Intensity'
+            ).transform_filter(
+                (alt.datum.Timepoints == max_int_timepoint)
+            )
             
-            plt.show()
-    
+            st.altair_chart(line_chart + point)
+
         return coordinates_list  # Return the list of coordinates
 
     def process_and_visualize(self,streamlit,decomposition_type):
