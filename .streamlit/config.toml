@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#E694FF"
+backgroundColor = "#FFFFFF"  # This sets the background to white
+secondaryBackgroundColor = "#2e2e2e"
+textColor = "#000000"       # This sets the text color to black for better contrast with white background
+font = "sans serif"
