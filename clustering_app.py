@@ -123,21 +123,21 @@ def main():
         )
 
         if decomposition_type == 'Dictionary Learning':
+        with st.expander("Dictionary Learning - More Info"):
             st.info(
-                "**Dictionary Learning**:\n"
                 "- **How it works**: This technique learns a dictionary of basis functions (or 'atoms') which best represents the input data in a sparse manner.\n"
                 "- **Pros**: Good for extracting temporally independent networks. Often leads to more interpretable results.\n"
                 "- **Cons vs. ICA**: Dictionary Learning doesn't guarantee spatial or temporal independence and might be computationally intensive for large datasets."
             )
-
-        elif decomposition_type == 'ICA':
-            st.info(
-                "**ICA (Independent Component Analysis)**:\n"
-                "- **How it works**: Assumes fMRI signals are mixtures of independent non-Gaussian source signals. Decomposes data into such source signals maximizing their statistical independence.\n"
-                "- **Pros**: Widely used for its ability to extract spatially independent brain networks.\n"
-                "- **Cons vs. Dictionary Learning**: Some ICA components can be hard to interpret or might represent noise."
-            )
     
+        elif decomposition_type == 'ICA':
+            with st.expander("ICA (Independent Component Analysis) - More Info"):
+                st.info(
+                    "- **How it works**: Assumes fMRI signals are mixtures of independent non-Gaussian source signals. Decomposes data into such source signals maximizing their statistical independence.\n"
+                    "- **Pros**: Widely used for its ability to extract spatially independent brain networks.\n"
+                    "- **Cons vs. Dictionary Learning**: Some ICA components can be hard to interpret or might represent noise."
+                )
+
     # Descriptions
     st.sidebar.markdown("After selecting parameters, click on **Run**. This will initiate the analysis based on your settings. The results will be visualized in the main panel.")
 
