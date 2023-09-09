@@ -168,7 +168,7 @@ class ComponentVisualization:
         # Get the mask image once outside the loop, assuming the first functional filename is representative for all
         mask_img = compute_epi_mask(self.func_file)
         masker = NiftiMasker(mask_img=mask_img, standardize=True)
-        time_series_all = masker.fit_transform(self.func_filename[0])
+        time_series_all = masker.fit_transform(self.func_file)
         
         for idx, component in enumerate(self.component_indices):
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 3))
