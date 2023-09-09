@@ -166,7 +166,7 @@ class ComponentVisualization:
         coordinates_list = []  # Initialize an empty list to store the coordinates. 
         
         # Get the mask image once outside the loop, assuming the first functional filename is representative for all
-        mask_img = compute_epi_mask(self.func_filename[0])
+        mask_img = compute_epi_mask(self.func_file)
         masker = NiftiMasker(mask_img=mask_img, standardize=True)
         time_series_all = masker.fit_transform(self.func_filename[0])
         
