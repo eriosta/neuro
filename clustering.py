@@ -3,13 +3,14 @@ from scipy.stats import pearsonr
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
-from nilearn import datasets, image, plotting, decomposition
-from scipy.cluster.hierarchy import leaves_list, linkage
-from scipy.cluster.hierarchy import fcluster
+from nilearn import datasets
+from nilearn.decomposition import DictLearning, CanICA
+from nilearn.plotting import plot_stat_map, find_xyz_cut_coords
+from nilearn.image import index_img
+from nilearn.input_data import NiftiMasker
+from scipy.cluster.hierarchy import leaves_list, linkage, fcluster
 import streamlit as st
-from nilearn.decomposition import CanICA, DictLearning
 from joblib import Parallel, delayed
-
 
 class ComponentCorrelation:
     def __init__(self, n_order, memory_level=2, cache_dir="nilearn_cache"):
@@ -158,27 +159,45 @@ class ComponentVisualization:
     #     if streamlit is not None:
     #         st.pyplot(plt)
 
-    def visualize_components(self, streamlit=None):
-            
+    def visualize_components(self, func_filenames, streamlit=None):
+    
+        # Assuming the class already has other necessary attributes like components_img_subject and bg_img
         coordinates_list = []  # Initialize an empty list to store the coordinates
-
+    
+        # Assuming that self.components_img_subject already has the spatial maps (components) extracted
+    
+        # Compute the mask from the EPI images
+        mask_img = compute_epi_mask(func_filenames)
+        masker = NiftiMasker(mask_img=mask_img, standardize=True)
+        time_series_all = masker.fit_transform(func_filenames)
+    
         for idx, component in enumerate(self.component_indices):
-            plt.figure(figsize=(15, 15))  # Create a new figure for each component
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 3))
+    
+            # MRI visualization on ax1
             component_img = image.index_img(self.components_img_subject, component)
             x_coord, y_coord, z_coord = plotting.find_xyz_cut_coords(component_img)
             title_component = f'S{self.subject_index}C{component}'
-            plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=(x_coord, y_coord, z_coord), display_mode='ortho', title=title_component, colorbar=False)
+            plotting.plot_stat_map(component_img, bg_img=self.bg_img, cut_coords=(x_coord, y_coord, z_coord), display_mode='ortho', title=title_component, colorbar=False, axes=ax1)
             
             coordinates_list.append((x_coord, y_coord, z_coord))  # Store the coordinates
-
-            if streamlit is not None:
-                st.pyplot(plt)  # Plot the figure in Streamlit
+    
+            # Time series visualization on ax2
+            time_series = time_series_all[:, idx]
+            max_int_timepoint = np.argmax(time_series)
+            ax2.plot(time_series)
+            ax2.scatter(max_int_timepoint, time_series[max_int_timepoint], color='red')
+            ax2.set(title=f'Time Series of Component {idx+1}', xlabel='Timepoints', ylabel='Intensity')
             
+            plt.tight_layout()
+    
+            if streamlit is not None:
+                st.pyplot(fig)  # Plot the figure in Streamlit
+    
             plt.show()
-
+    
         return coordinates_list  # Return the list of coordinates
 
-    
     def process_and_visualize(self,streamlit,decomposition_type):
         self.apply_decomposition(decomposition_type)
         coordinates_list = self.visualize_components(streamlit)
