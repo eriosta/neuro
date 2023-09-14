@@ -222,7 +222,7 @@ def main():
         st.write(f"Visualizing component correlation with t = {t}")
         
         correlation_tool = initialize_correlation_tool(order_components)
-        clusters = visualize_correlation(correlation_tool, p_threshold, decomposition_type, decomposition_key)
+        clusters = visualize_correlation(correlation_tool, p_threshold, corr_coefficient, decomposition_type, decomposition_key)
         clusters_df = create_clusters_dataframe(clusters)
         display_clusters(clusters)
         process_and_display_images(func_filenames, clusters, order_components, fwhm, decomposition_type, decomposition_key)
