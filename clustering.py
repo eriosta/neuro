@@ -111,12 +111,20 @@ class ComponentCorrelation:
                 A dictionary with cluster identifiers as keys and lists of 
                 component indices as values.
         """
+        # 1. Identify components that have significant correlations based on the cut-offs
+        significant_components = set()
+        for result in self.results:
+            significant_components.add(result['Component_1'])
+            significant_components.add(result['Component_2'])
+    
         Z = linkage(self.correlation_matrix, method='average')
         cluster_assignments = fcluster(Z, t, criterion='distance')
         clusters = {}
         for idx, cluster_id in enumerate(cluster_assignments):
-            clusters.setdefault(cluster_id, []).append(idx)
+            if idx in significant_components:  # 2. Ensure only significant components are considered
+                clusters.setdefault(cluster_id, []).append(idx)
         return clusters
+
 
 
 class ComponentVisualization:
