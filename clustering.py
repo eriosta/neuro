@@ -44,7 +44,7 @@ class ComponentCorrelation:
         results = decomposition_model.fit_transform(self.func_filename)
         self.components_img = results[0]
 
-    def _compute_correlation_matrix(self, p_threshold=0.01):
+    def _compute_correlation_matrix(self, p_threshold=0.01, corr_coefficient=0.5):
         self.correlation_matrix = np.zeros((self.n_order, self.n_order))
         self.results = []
         for i in range(self.n_order):
@@ -53,7 +53,9 @@ class ComponentCorrelation:
                 data_j = self.components_img[..., j]
                 if data_i.size > 1 and data_j.size > 1:
                     correlation, p_value = pearsonr(data_i.ravel(), data_j.ravel())
-                    if p_value < p_threshold:  # Check if p-value is significant based on user input
+                    
+                    # Check if p-value is significant and correlation is above the threshold
+                    if p_value < p_threshold and abs(correlation) > corr_coefficient:  
                         self.results.append({
                             'Component_1': i,
                             'Component_2': j,
@@ -62,6 +64,7 @@ class ComponentCorrelation:
                         })
                         self.correlation_matrix[i, j] = correlation
         self.correlation_matrix = np.nan_to_num(self.correlation_matrix)
+
 
     def _plot_heatmap(self, streamlit=None):
         diverging_cmap = plt.cm.RdBu_r
@@ -87,10 +90,10 @@ class ComponentCorrelation:
         df = df.sort_values(by='p_value')
         df.to_csv(filename, index=False)
 
-    def visualize_component_correlation(self,streamlit,p_threshold,decomposition_type):
+    def visualize_component_correlation(self,streamlit,p_threshold,corr_coefficient,decomposition_type):
         self._fetch_data()
         self._perform_decomposition(decomposition_type)
-        self._compute_correlation_matrix(p_threshold)
+        self._compute_correlation_matrix(p_threshold,corr_coefficient)
         self._plot_heatmap(streamlit)
         self.export_results_to_csv()
         
