@@ -157,8 +157,8 @@ def main():
         return ComponentCorrelation(n_order=order_components)
 
     @measure_resources
-    def visualize_correlation(correlation_tool, p_threshold, decomposition_type, decomposition_key):
-        correlation_tool.visualize_component_correlation(streamlit=True, p_threshold=p_threshold, decomposition_type=decomposition_key[decomposition_type])
+    def visualize_correlation(correlation_tool, p_threshold, corr_coefficient, decomposition_type, decomposition_key):
+        correlation_tool.visualize_component_correlation(streamlit=True, p_threshold=p_threshold, corr_coefficient=corr_coefficient, decomposition_type=decomposition_key[decomposition_type])
         return correlation_tool.extract_clusters(t=t)
 
     def create_clusters_dataframe(clusters):
